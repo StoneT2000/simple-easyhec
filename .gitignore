@@ -1,0 +1,7 @@
+__pycache__/
+*.egg-info/
+build/
+dist/
+results/
+sam2/
+.vscode/
