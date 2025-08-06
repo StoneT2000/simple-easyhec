@@ -16,6 +16,7 @@ from tqdm import tqdm
 from easyhec.examples.sim.base import Args
 from easyhec.optim.nvdiffrast_renderer import NVDiffrastRenderer
 from easyhec.optim.optimize import optimize
+from easyhec.segmentation.interactive import InteractiveSegmentation
 
 
 def generate_synthetic_data(env: BaseEnv, samples: int, camera_name: str):
@@ -171,6 +172,17 @@ def main(args: ManiSkillArgs):
         base_env, args.samples + args.test_samples, args.camera_name
     )
 
+    if not args.use_ground_truth_segmentation:
+        interactive_segmentation = InteractiveSegmentation(
+            segmentation_model="sam2",
+            segmentation_model_cfg=dict(
+                checkpoint=args.checkpoint, model_cfg=args.model_cfg
+            ),
+        )
+        synthetic_data["robot_masks"] = interactive_segmentation.get_segmentation(
+            synthetic_data["images"][: args.samples]
+        )
+
     # data that you would need to collect in the real world
     link_poses_dataset = synthetic_data["link_poses_dataset"]
     intrinsic = synthetic_data["intrinsic"]
@@ -229,7 +241,7 @@ def main(args: ManiSkillArgs):
         ),
         gt_camera_pose=ground_truth_camera_pose,
         iterations=args.train_steps,
-        early_stopping_threshold=args.early_stopping_threshold,
+        early_stopping_steps=args.early_stopping_steps,
     )
 
     print(f"Predicted camera extrinsic: {predicted_camera_extrinsic}")
@@ -305,11 +317,7 @@ def main(args: ManiSkillArgs):
         plt.subplot(1, 3, 3)
         plt.imshow(segmentation_images[i], cmap="gray")
         plt.axis("off")
-        plt.title(
-            "Ground Truth Extrinsic"
-            if args.use_ground_truth_segmentation
-            else "SAM2 Predicted Segmentation"
-        )
+        plt.title("Ground Truth Extrinsic")
 
         Path("results").mkdir(exist_ok=True)
         plt.savefig(f"results/maniskill_{args.env_id}_{args.camera_name}_{i}.png")

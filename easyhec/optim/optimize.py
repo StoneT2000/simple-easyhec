@@ -19,7 +19,7 @@ def optimize(
     learning_rate: float = 3e-3,
     gt_camera_pose: Optional[torch.Tensor] = None,
     batch_size: Optional[int] = None,
-    early_stopping_threshold: float = 50.0,
+    early_stopping_steps: int = 200,
     verbose: bool = True,
 ):
     """
@@ -42,7 +42,7 @@ def optimize(
         learning_rate (float): Learning rate for the Adam optimizer
         batch_size (int): Default is None meaning whole batch optimization. Otherwise this specifies the number of samples to process in each batch.
         gt_camera_pose (torch.Tensor, shape (4, 4)): Default is None. If a ground truth camera pose is provided the optimization function will compute error metrics relative to the ground truth camera pose.
-        early_stopping_threshold (float): Default is 600.0. If the loss is below this threshold the optimization will stop.
+        early_stopping_steps (int): Default is 200. If the loss has not improved after this many steps the optimization will stop.
         verbose (bool): Default is True. If True, will print the loss value and a progress bar.
     """
     device = initial_extrinsic_guess.device
@@ -59,6 +59,7 @@ def optimize(
     optimizer = torch.optim.Adam(solver.parameters(), lr=learning_rate)
     best_predicted_extrinsic = initial_extrinsic_guess.clone()
     best_loss = float("inf")
+    last_loss_improvement_step = 0
     pbar = tqdm(range(iterations)) if verbose else range(iterations)
     dataset = dict(
         intrinsic=camera_intrinsic,
@@ -82,8 +83,10 @@ def optimize(
         if loss_value < best_loss:
             best_loss = loss_value
             best_predicted_extrinsic = solver.get_predicted_extrinsic()
-            if loss_value < early_stopping_threshold:
-                break
+            last_loss_improvement_step = i
+
+        if i - last_loss_improvement_step >= early_stopping_steps:
+            break
         if verbose:
             pbar.set_description(f"Loss: {loss_value:.2f}, Best Loss: {best_loss:.2f}")
         if "metrics" in output:

@@ -20,9 +20,8 @@ class Args:
     """batch size for the optimization. If none will use whole batch optimization"""
     train_steps: int = 5000
     """number of optimization steps. The default is 5000 which is usually more than enough to converge"""
-    early_stopping_threshold: float = 500
-    """early stopping threshold for the optimization. For smaller images you typically need to decrease this value. This can change depending
-    on the size of the robot in the image as well."""
+    early_stopping_steps: int = 200
+    """if after this many steps of optimization the loss has not improved, then optimization will stop. If this value is 0 then early stopping is disabled."""
     seed: int = 0
 
     ### sam2 segmentation related configs ###

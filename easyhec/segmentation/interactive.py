@@ -58,7 +58,6 @@ class ImageRenderer:
         plt.close()
 
 
-# predictor = SAM2ImagePredictor(build_sam2(model_cfg, checkpoint))
 class InteractiveSegmentation:
     """
     Interactive segmentation tool. Opens a window from which you can click to record pixel positions.
