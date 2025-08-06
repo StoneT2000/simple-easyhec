@@ -104,11 +104,11 @@ class InteractiveSegmentation:
         def print_help_message():
             if state == "annotation":
                 print(
-                    f"Currently annotating image {current_image_idx+1}/{len(images)}. Press 't' when done. Press 'r' to redo the point annotation"
+                    f"Currently annotating image {current_image_idx+1}/{len(images)}. Press 't' when done. Press 'r' to clear the current point annotation and redo the points"
                 )
             elif state == "segmentation":
                 print(
-                    f"Currently showing the predicted segmentation for image {current_image_idx+1}/{len(images)}. Press 't' to move on to the next image. Press 'r' to delete this segmentation and re-annotate the points for this image."
+                    f"Currently showing the predicted segmentation for image {current_image_idx+1}/{len(images)}. Press 't' to move on to the next image. Press 'e' to delete this segmentation and edit the existing annotation points. Press 'r' to delete this segmentation and re-annotate the points for this image."
                 )
 
         def onclick(event):
@@ -120,12 +120,11 @@ class InteractiveSegmentation:
                 clicked_points.append((x, y))
                 annotation_objs.append(plt.plot(x, y, "ro")[0])
 
-        def clear_points():
-            nonlocal annotation_objs, clicked_points
+        def clear_drawn_points():
+            nonlocal annotation_objs
             for x in annotation_objs:
                 x.remove()
             annotation_objs = []
-            clicked_points = []
 
         renderer(images[0])
         renderer.ax.axis("off")
@@ -151,8 +150,10 @@ class InteractiveSegmentation:
                     "Click on the image to record annotation points for segmentation"
                 )
                 renderer(image)
+
                 if key == "t":
                     if self.segmentation_model == "sam2":
+                        print("CLICKED", len(clicked_points))
                         input_point = np.array(clicked_points)
                         input_label = np.array([1] * len(clicked_points))
                         with torch.inference_mode(), torch.autocast(
@@ -164,9 +165,10 @@ class InteractiveSegmentation:
                             )
                             mask = mask[0]
                     state = "segmentation"
-                    clear_points()
-                if key == "r":
-                    clear_points()
+                    clear_drawn_points()
+                elif key == "r":
+                    clear_drawn_points()
+                    clicked_points = []
                     print("Cleared previous points")
             elif state == "segmentation":
                 renderer.fig.canvas.mpl_disconnect(cid)
@@ -183,13 +185,23 @@ class InteractiveSegmentation:
                     masks.append(mask)
                     current_image_idx += 1
                     state = "annotation"
-                    clear_points()
+                    clear_drawn_points()
+                    clicked_points = []
                     if current_image_idx < len(images):
                         print_help_message()
-
+                elif key == "e":
+                    state = "annotation"
+                    # redraw existing points since they got removed to show the segmentation image
+                    for x in annotation_objs:
+                        x.remove()
+                    annotation_objs = []
+                    for pos in clicked_points:
+                        annotation_objs.append(
+                            renderer.ax.plot(pos[0], pos[1], "ro")[0]
+                        )
                 elif key == "r":
                     state = "annotation"
                     clicked_points = []
-                    clear_points()
+                    clear_drawn_points()
                     print("Cleared previous points")
         return np.stack(masks)
