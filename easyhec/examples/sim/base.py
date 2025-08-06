@@ -26,7 +26,7 @@ class Args:
     seed: int = 0
 
     ### sam2 segmentation related configs ###
-    use_ground_truth_segmentation: bool = False
+    use_ground_truth_segmentation: bool = True
     """if true will optimize against the ground truth segmentation masks. If false will open a GUI with an interactive segmentation tool that a user can click points on that are then sent to the SAM2 segmentation model to predict segmentation masks"""
     model_cfg: str = "sam2/configs/sam2.1/sam2.1_hiera_l.yaml"
     """the model config for sam2"""

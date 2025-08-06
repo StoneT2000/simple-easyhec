@@ -16,7 +16,6 @@ from tqdm import tqdm
 from easyhec.examples.sim.base import Args
 from easyhec.optim.nvdiffrast_renderer import NVDiffrastRenderer
 from easyhec.optim.optimize import optimize
-from easyhec.segmentation.interactive import InteractiveSegmentation
 
 
 def generate_synthetic_data(env: BaseEnv, samples: int, camera_name: str):
@@ -54,11 +53,17 @@ def generate_synthetic_data(env: BaseEnv, samples: int, camera_name: str):
     segmentation_masks = []
     link_poses_dataset = []
     camera_mount_poses = []
-    init_qpos = env.agent.robot.get_qpos().cpu().numpy()
+    init_qpos = env.agent.robot.get_qpos().cpu().numpy()[0]
     for i in range(samples):
-        noise = np.random.randn(init_qpos.shape[1]) * 0.2
-        noise[-2:] = 0
-        env.agent.robot.set_qpos(init_qpos.copy() + noise)
+        noise = np.random.randn(init_qpos.shape[0]) * 0.2
+        qpos = init_qpos.copy() + noise
+        for active_joint in env.agent.robot.active_joints:
+            qpos[active_joint.active_index] = np.clip(
+                qpos[active_joint.active_index],
+                active_joint.limits[0, 0],
+                active_joint.limits[0, 1],
+            )
+        env.agent.robot.set_qpos(qpos)
         env.scene.update_render()
         render_camera.capture()
         data = render_camera.get_obs(rgb=True, segmentation=True)
@@ -92,7 +97,7 @@ def generate_synthetic_data(env: BaseEnv, samples: int, camera_name: str):
     for i in range(len(segmentation_masks)):
         segmentation_image = images[i].copy()
         segment_ids = []
-        for link in env.agent.robot.links[:-4]:
+        for link in env.agent.robot.links:
             segment_ids.append(link.per_scene_id[0])
         robot_mask = np.isin(segmentation_masks[i], segment_ids)
         segmentation_image[robot_mask] //= 4
@@ -165,18 +170,6 @@ def main(args: ManiSkillArgs):
     synthetic_data = generate_synthetic_data(
         base_env, args.samples + args.test_samples, args.camera_name
     )
-
-    if not args.use_ground_truth_segmentation:
-        interactive_segmentation = InteractiveSegmentation(
-            "sam2",
-            segmentation_model_cfg=dict(
-                checkpoint=args.checkpoint, model_cfg=args.model_cfg
-            ),
-        )
-        predicted_segmentation_masks = interactive_segmentation.get_segmentation(
-            synthetic_data["images"][: args.samples]
-        )
-        synthetic_data["robot_masks"] = predicted_segmentation_masks
 
     # data that you would need to collect in the real world
     link_poses_dataset = synthetic_data["link_poses_dataset"]
@@ -312,7 +305,11 @@ def main(args: ManiSkillArgs):
         plt.subplot(1, 3, 3)
         plt.imshow(segmentation_images[i], cmap="gray")
         plt.axis("off")
-        plt.title("Ground Truth Extrinsic")
+        plt.title(
+            "Ground Truth Extrinsic"
+            if args.use_ground_truth_segmentation
+            else "SAM2 Predicted Segmentation"
+        )
 
         Path("results").mkdir(exist_ok=True)
         plt.savefig(f"results/maniskill_{args.env_id}_{args.camera_name}_{i}.png")
