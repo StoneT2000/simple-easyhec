@@ -153,7 +153,6 @@ class InteractiveSegmentation:
 
                 if key == "t":
                     if self.segmentation_model == "sam2":
-                        print("CLICKED", len(clicked_points))
                         input_point = np.array(clicked_points)
                         input_label = np.array([1] * len(clicked_points))
                         with torch.inference_mode(), torch.autocast(

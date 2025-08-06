@@ -75,9 +75,12 @@ class RBSolver(nn.Module):
                 )
                 si = self.renderer.render_mask(verts, faces, intrinsic, Tc_c2l)
                 all_link_si.append(si)
-            all_link_si = torch.stack(all_link_si).sum(0).clamp(max=1)
+            if len(all_link_si) == 1:
+                all_link_si = all_link_si[0].reshape(1, self.H, self.W)
+            else:
+                all_link_si = torch.stack(all_link_si)
+            all_link_si = all_link_si.sum(0).clamp(max=1)
             all_frame_all_link_si.append(all_link_si)
-
             loss = torch.sum((all_link_si - masks_ref[bid].float()) ** 2)
             losses.append(loss)
         loss = torch.stack(losses).mean()
