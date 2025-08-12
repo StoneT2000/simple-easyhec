@@ -17,6 +17,7 @@ from easyhec.examples.sim.base import Args
 from easyhec.optim.nvdiffrast_renderer import NVDiffrastRenderer
 from easyhec.optim.optimize import optimize
 from easyhec.segmentation.interactive import InteractiveSegmentation
+from easyhec.utils.camera_conversions import opencv2ros, ros2opencv
 
 
 def generate_synthetic_data(env: BaseEnv, samples: int, camera_name: str):
@@ -31,10 +32,8 @@ def generate_synthetic_data(env: BaseEnv, samples: int, camera_name: str):
 
     # gets ground truth camera pose. If the camera is mounted then this extrinsic is in the reference frame of the mount link
     # in sapien the poses are stored in the ROS convention
-    ros2opencv = np.array([[0, 0, 1, 0], [-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 0, 1]]).T
-    camera_pose = (
-        ros2opencv
-        @ render_camera.camera.get_local_pose().sp.inv().to_transformation_matrix()
+    camera_pose = ros2opencv(
+        render_camera.camera.get_local_pose().sp.to_transformation_matrix()
     )
     camera_height, camera_width = (
         render_camera.config.height,
@@ -226,25 +225,34 @@ def main(args: ManiSkillArgs):
     if camera_mount_poses is not None:
         camera_mount_poses = torch.from_numpy(camera_mount_poses).float().to(device)
 
-    predicted_camera_extrinsic = optimize(
-        camera_intrinsic=intrinsic,
-        robot_masks=robot_masks[: args.samples],
-        link_poses_dataset=link_poses_dataset[: args.samples],
-        initial_extrinsic_guess=initial_extrinsic_guess,
-        mesh_paths=mesh_paths,
-        camera_width=camera_width,
-        camera_height=camera_height,
-        camera_mount_poses=(
-            camera_mount_poses[: args.samples]
-            if camera_mount_poses is not None
-            else None
-        ),
-        gt_camera_pose=ground_truth_camera_pose,
-        iterations=args.train_steps,
-        early_stopping_steps=args.early_stopping_steps,
+    predicted_camera_extrinsic_opencv = (
+        optimize(
+            camera_intrinsic=intrinsic,
+            robot_masks=robot_masks[: args.samples],
+            link_poses_dataset=link_poses_dataset[: args.samples],
+            initial_extrinsic_guess=initial_extrinsic_guess,
+            mesh_paths=mesh_paths,
+            camera_width=camera_width,
+            camera_height=camera_height,
+            camera_mount_poses=(
+                camera_mount_poses[: args.samples]
+                if camera_mount_poses is not None
+                else None
+            ),
+            gt_camera_pose=ground_truth_camera_pose,
+            iterations=args.train_steps,
+            early_stopping_steps=args.early_stopping_steps,
+        )
+        .cpu()
+        .numpy()
     )
+    predicted_camera_extrinsic_ros = opencv2ros(predicted_camera_extrinsic_opencv)
 
-    print(f"Predicted camera extrinsic: {predicted_camera_extrinsic}")
+    ### Print predicted results ###
+
+    print(f"Predicted camera extrinsic")
+    print(f"OpenCV:\n{predicted_camera_extrinsic_opencv.cpu().numpy()}")
+    print(f"ROS/SAPIEN/ManiSkill:\n{predicted_camera_extrinsic_ros}")
 
     ### visulization code for the predicted extrinsic ###
     renderer = NVDiffrastRenderer(camera_width, camera_height)
@@ -283,11 +291,13 @@ def main(args: ManiSkillArgs):
                 initial_extrinsic_guess @ camera_mount_poses[i]
             )
             predicted_mask = get_mask_from_camera_pose(
-                predicted_camera_extrinsic @ camera_mount_poses[i]
+                predicted_camera_extrinsic_opencv @ camera_mount_poses[i]
             )
         else:
             initial_guess_mask = get_mask_from_camera_pose(initial_extrinsic_guess)
-            predicted_mask = get_mask_from_camera_pose(predicted_camera_extrinsic)
+            predicted_mask = get_mask_from_camera_pose(
+                predicted_camera_extrinsic_opencv
+            )
 
         initial_guess_mask = initial_guess_mask.cpu().numpy()
         predicted_mask = predicted_mask.cpu().numpy()
