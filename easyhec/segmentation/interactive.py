@@ -210,4 +210,5 @@ class InteractiveSegmentation:
                     clicked_points = []
                     clear_drawn_points()
                     print("Cleared previous points")
+        renderer.close()
         return np.stack(masks)

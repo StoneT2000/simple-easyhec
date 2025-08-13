@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+import cv2
 import numpy as np
 import pyrealsense2 as rs
 import torch
 import trimesh
 import tyro
-from transforms3d.euler import euler2mat, mat2euler
+from transforms3d.euler import euler2mat
 
 from easyhec.examples.real.base import Args
 from easyhec.optim.optimize import optimize
@@ -46,8 +47,8 @@ def main(args: RealPaperArgs):
     pipeline = rs.pipeline()
 
     # Configure streams
-    camera_width = 640
-    camera_height = 360
+    camera_width = 1280
+    camera_height = 720
     config.enable_stream(
         rs.stream.color, camera_width, camera_height, rs.format.bgr8, 30
     )
@@ -72,6 +73,7 @@ def main(args: RealPaperArgs):
             print("No frame")
             continue
         image = np.asanyarray(cframe.get_data())
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         break
     # TODO (stao): allow more image captures
     images = [image]
