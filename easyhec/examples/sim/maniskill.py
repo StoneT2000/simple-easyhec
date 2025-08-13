@@ -247,7 +247,7 @@ def main(args: ManiSkillArgs):
     ### Print predicted results ###
     print(f"Predicted camera extrinsic")
     print(f"OpenCV:\n{predicted_camera_extrinsic_opencv}")
-    print(f"ROS/SAPIEN/ManiSkill:\n{predicted_camera_extrinsic_ros}")
+    print(f"ROS/SAPIEN/ManiSkill/Mujoco/Isaac:\n{predicted_camera_extrinsic_ros}")
 
     visualization.visualize_extrinsic_results(
         images=images[args.samples :],
