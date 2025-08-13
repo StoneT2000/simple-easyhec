@@ -231,7 +231,7 @@ def main(args: ManiSkillArgs):
             robot_masks=robot_masks[: args.samples],
             link_poses_dataset=link_poses_dataset[: args.samples],
             initial_extrinsic_guess=initial_extrinsic_guess,
-            mesh_paths=mesh_paths,
+            meshes=mesh_paths,
             camera_width=camera_width,
             camera_height=camera_height,
             camera_mount_poses=(

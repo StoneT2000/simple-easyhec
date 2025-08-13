@@ -11,7 +11,7 @@ def optimize(
     camera_intrinsic: torch.Tensor,
     robot_masks: torch.Tensor,
     link_poses_dataset: torch.Tensor,
-    mesh_paths: List[str],
+    meshes: List[str],
     camera_width: int,
     camera_height: int,
     camera_mount_poses: Optional[torch.Tensor] = None,
@@ -34,7 +34,7 @@ def optimize(
         camera_intrinsic (torch.Tensor, shape (3, 3)): Camera intrinsic matrix
         robot_masks (torch.Tensor, shape (N, H, W)): Robot segmentation masks
         link_poses_dataset (torch.Tensor, shape (N, L, 4, 4)): Link poses relative to any frame (e.g. the robot base frame), where N is the number of samples, L is the number of links
-        mesh_paths (List[str]): List of paths to the mesh files of each of the L links
+        meshes (List[str | trimesh.Trimesh]): List of paths to the mesh files of each of the L links. Can also be a list of trimesh.Trimesh objects.
         camera_width (int): Camera width
         camera_height (int): Camera height
         camera_mount_poses (torch.Tensor, shape (N, 4, 4)): Used for cameras that are fixed relative to some mount that may be moving. If None, then the camera is assumed to be fixed. If provided the initial extrinsic guess should be relative to the mount frame.
@@ -51,7 +51,7 @@ def optimize(
         camera_height=camera_height,
         robot_masks=robot_masks,
         link_poses_dataset=link_poses_dataset,
-        mesh_paths=mesh_paths,
+        meshes=meshes,
         initial_extrinsic_guess=initial_extrinsic_guess,
     )
     solver = RBSolver(cfg)

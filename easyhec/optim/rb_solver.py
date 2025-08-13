@@ -1,6 +1,6 @@
 import os.path as osp
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import torch
@@ -17,7 +17,7 @@ class RBSolverConfig:
     camera_width: int
     robot_masks: torch.Tensor
     link_poses_dataset: torch.Tensor
-    mesh_paths: List[str]
+    meshes: List[Union[str, trimesh.Trimesh]]
     initial_extrinsic_guess: torch.Tensor
 
 
@@ -27,14 +27,17 @@ class RBSolver(nn.Module):
     def __init__(self, cfg: RBSolverConfig):
         super().__init__()
         self.cfg = cfg
-        mesh_paths = self.cfg.mesh_paths
-        for link_idx, mesh_path in enumerate(mesh_paths):
-            mesh = trimesh.load(osp.expanduser(mesh_path), force="mesh")
+        meshes = self.cfg.meshes
+        for link_idx, mesh in enumerate(meshes):
+            if isinstance(mesh, str):
+                mesh = trimesh.load(osp.expanduser(mesh), force="mesh")
+            else:
+                assert isinstance(mesh, trimesh.Trimesh)
             vertices = torch.from_numpy(mesh.vertices).float()
             faces = torch.from_numpy(mesh.faces).int()
             self.register_buffer(f"vertices_{link_idx}", vertices)
             self.register_buffer(f"faces_{link_idx}", faces)
-        self.nlinks = len(mesh_paths)
+        self.nlinks = len(meshes)
         # camera parameters
         init_Tc_c2b = self.cfg.initial_extrinsic_guess
         init_dof = utils_3d.se3_log_map(
