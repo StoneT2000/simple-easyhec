@@ -155,7 +155,7 @@ def main(args: RealPaperArgs):
 
     print(f"Predicted camera extrinsic")
     print(f"OpenCV:\n{predicted_camera_extrinsic_opencv}")
-    print(f"ROS/SAPIEN/ManiSkill:\n{predicted_camera_extrinsic_ros}")
+    print(f"ROS/SAPIEN/ManiSkill/Mujoco/Isaac:\n{predicted_camera_extrinsic_ros}")
 
     visualization.visualize_extrinsic_results(
         images=images,
@@ -165,7 +165,7 @@ def main(args: RealPaperArgs):
         extrinsics=np.stack(
             [initial_extrinsic_guess, predicted_camera_extrinsic_opencv]
         ),
-        labels=["Initial Extrinsic Guess", "Predicted Extrinsic"],
+        labels=["Initial Extrinsic Guess", "Predicted Extrinsic", "Ground Truth"],
         output_dir="results/paper",
     )
     print("Visualizations saved to results/paper")

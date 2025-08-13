@@ -1,22 +1,18 @@
 from dataclasses import dataclass
-from pathlib import Path
 
 import gymnasium as gym
 import mani_skill.envs
-import matplotlib.pyplot as plt
 import numpy as np
 import sapien
 import torch
 import transforms3d
-import trimesh
 import tyro
 from mani_skill.envs.sapien_env import BaseEnv
-from tqdm import tqdm
 
 from easyhec.examples.sim.base import Args
-from easyhec.optim.nvdiffrast_renderer import NVDiffrastRenderer
 from easyhec.optim.optimize import optimize
 from easyhec.segmentation.interactive import InteractiveSegmentation
+from easyhec.utils import visualization
 from easyhec.utils.camera_conversions import opencv2ros, ros2opencv
 
 
@@ -193,7 +189,6 @@ def main(args: ManiSkillArgs):
     camera_mount_poses = synthetic_data["camera_mount_poses"]
 
     # data used just for visualization
-    segmentation_images = synthetic_data["segmentation_images"]
     images = synthetic_data["images"]
 
     ### generate an initial guess around the ground truth pose ###
@@ -217,20 +212,19 @@ def main(args: ManiSkillArgs):
     )
 
     ### run the optimization given the data ###
-    initial_extrinsic_guess = torch.tensor(initial_extrinsic_guess).float().to(device)
-    ground_truth_camera_pose = torch.tensor(ground_truth_camera_pose).float().to(device)
-    robot_masks = torch.from_numpy(robot_masks).float().to(device)
-    link_poses_dataset = torch.from_numpy(link_poses_dataset).float().to(device)
-    intrinsic = torch.from_numpy(intrinsic).float().to(device)
-    if camera_mount_poses is not None:
-        camera_mount_poses = torch.from_numpy(camera_mount_poses).float().to(device)
 
     predicted_camera_extrinsic_opencv = (
         optimize(
-            camera_intrinsic=intrinsic,
-            robot_masks=robot_masks[: args.samples],
-            link_poses_dataset=link_poses_dataset[: args.samples],
-            initial_extrinsic_guess=initial_extrinsic_guess,
+            camera_intrinsic=torch.from_numpy(intrinsic).float().to(device),
+            robot_masks=torch.from_numpy(robot_masks[: args.samples])
+            .float()
+            .to(device),
+            link_poses_dataset=torch.from_numpy(link_poses_dataset[: args.samples])
+            .float()
+            .to(device),
+            initial_extrinsic_guess=torch.from_numpy(initial_extrinsic_guess)
+            .float()
+            .to(device),
             meshes=mesh_paths,
             camera_width=camera_width,
             camera_height=camera_height,
@@ -239,7 +233,9 @@ def main(args: ManiSkillArgs):
                 if camera_mount_poses is not None
                 else None
             ),
-            gt_camera_pose=ground_truth_camera_pose,
+            gt_camera_pose=torch.from_numpy(ground_truth_camera_pose)
+            .float()
+            .to(device),
             iterations=args.train_steps,
             early_stopping_steps=args.early_stopping_steps,
         )
@@ -249,88 +245,26 @@ def main(args: ManiSkillArgs):
     predicted_camera_extrinsic_ros = opencv2ros(predicted_camera_extrinsic_opencv)
 
     ### Print predicted results ###
-
     print(f"Predicted camera extrinsic")
-    print(f"OpenCV:\n{predicted_camera_extrinsic_opencv.cpu().numpy()}")
+    print(f"OpenCV:\n{predicted_camera_extrinsic_opencv}")
     print(f"ROS/SAPIEN/ManiSkill:\n{predicted_camera_extrinsic_ros}")
 
-    ### visulization code for the predicted extrinsic ###
-    renderer = NVDiffrastRenderer(camera_width, camera_height)
-    images = images[args.samples :]
-    segmentation_images = segmentation_images[args.samples :]
-    link_poses_dataset = link_poses_dataset[args.samples :]
-    if camera_mount_poses is not None:
-        camera_mount_poses = camera_mount_poses[args.samples :]
-    else:
-        camera_mount_poses = None
-    robot_masks = robot_masks[args.samples :]
-
-    print(
-        "saving visualizations of predicted extrinsic on test data to results/maniskill"
+    visualization.visualize_extrinsic_results(
+        images=images[args.samples :],
+        link_poses_dataset=link_poses_dataset[args.samples :],
+        meshes=mesh_paths,
+        intrinsic=intrinsic,
+        extrinsics=np.stack(
+            [
+                initial_extrinsic_guess,
+                predicted_camera_extrinsic_opencv,
+                ground_truth_camera_pose,
+            ]
+        ),
+        labels=["Initial Extrinsic Guess", "Predicted Extrinsic", "Ground Truth"],
+        output_dir="results/maniskill",
     )
-    for i in tqdm(range(args.test_samples)):
-
-        def get_mask_from_camera_pose(camera_pose):
-            mask = torch.zeros((camera_height, camera_width), device=base_env.device)
-            for j, link_pose in enumerate(link_poses_dataset[i]):
-                mesh_path = mesh_paths[j]
-                mesh = trimesh.load_mesh(mesh_path)
-                vertices = mesh.vertices.copy()
-                link_mask = renderer.render_mask(
-                    torch.from_numpy(vertices).float().to(device),
-                    torch.from_numpy(mesh.faces).int().to(device),
-                    intrinsic,
-                    camera_pose @ link_pose,
-                )
-                link_mask = link_mask.detach()
-                mask[link_mask > 0] = 1
-            return mask
-
-        if camera_mount_poses is not None:
-            initial_guess_mask = get_mask_from_camera_pose(
-                initial_extrinsic_guess @ camera_mount_poses[i]
-            )
-            predicted_mask = get_mask_from_camera_pose(
-                predicted_camera_extrinsic_opencv @ camera_mount_poses[i]
-            )
-        else:
-            initial_guess_mask = get_mask_from_camera_pose(initial_extrinsic_guess)
-            predicted_mask = get_mask_from_camera_pose(
-                predicted_camera_extrinsic_opencv
-            )
-
-        initial_guess_mask = initial_guess_mask.cpu().numpy()
-        predicted_mask = predicted_mask.cpu().numpy()
-        overlaid_image_initial_guess = images[i].copy()
-        overlaid_image_predicted = images[i].copy()
-        overlaid_image_initial_guess[initial_guess_mask > 0] = (
-            overlaid_image_initial_guess[initial_guess_mask > 0] // 4
-        )
-        overlaid_image_predicted[predicted_mask > 0] = (
-            overlaid_image_predicted[predicted_mask > 0] // 4
-        )
-
-        plt.figure(figsize=(21, 7))
-        for j in range(1, 4):
-            plt.subplot(1, 3, j)
-
-        plt.subplot(1, 3, 1)
-        plt.imshow(overlaid_image_initial_guess)
-        plt.axis("off")
-        plt.title("Original Extrinsic Guess")
-
-        plt.subplot(1, 3, 2)
-        plt.imshow(overlaid_image_predicted)
-        plt.axis("off")
-        plt.title("Predicted Extrinsic")
-
-        plt.subplot(1, 3, 3)
-        plt.imshow(segmentation_images[i], cmap="gray")
-        plt.axis("off")
-        plt.title("Ground Truth Extrinsic")
-
-        Path("results").mkdir(exist_ok=True)
-        plt.savefig(f"results/maniskill_{args.env_id}_{args.camera_name}_{i}.png")
+    print("Visualizations saved to results/maniskill")
 
 
 if __name__ == "__main__":

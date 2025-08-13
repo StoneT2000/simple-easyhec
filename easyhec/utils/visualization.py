@@ -1,9 +1,11 @@
+import os.path as osp
 from pathlib import Path
 from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import trimesh
 from tqdm import tqdm
 
 from easyhec.optim.nvdiffrast_renderer import NVDiffrastRenderer
@@ -39,10 +41,15 @@ def visualize_extrinsic_results(
     extrinsics = torch.from_numpy(extrinsics).float().to(device)
     link_poses_dataset = torch.from_numpy(link_poses_dataset).float().to(device)
 
+    for i in range(len(meshes)):
+        if isinstance(meshes[i], str):
+            meshes[i] = trimesh.load(osp.expanduser(meshes[i]), force="mesh")
     link_vertices = [mesh.vertices.copy() for mesh in meshes]
     link_faces = [mesh.faces.copy() for mesh in meshes]
-    link_vertices = torch.from_numpy(np.stack(link_vertices)).float().to(device)
-    link_faces = torch.from_numpy(np.stack(link_faces)).int().to(device)
+    link_vertices = [
+        torch.from_numpy(mesh.vertices).float().to(device) for mesh in meshes
+    ]
+    link_faces = [torch.from_numpy(mesh.faces).int().to(device) for mesh in meshes]
 
     def get_mask_from_camera_pose(camera_pose):
         mask = torch.zeros((camera_height, camera_width), device=device)
