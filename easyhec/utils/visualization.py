@@ -37,7 +37,7 @@ def visualize_extrinsic_results(
     ### visualization code for the predicted extrinsic ###
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     camera_height, camera_width = images[0].shape[:2]
-    renderer = NVDiffrastRenderer(camera_width, camera_height)
+    renderer = NVDiffrastRenderer(camera_height, camera_width)
     extrinsics = torch.from_numpy(extrinsics).float().to(device)
     link_poses_dataset = torch.from_numpy(link_poses_dataset).float().to(device)
 

@@ -48,7 +48,7 @@ class RBSolver(nn.Module):
         self.dof = nn.Parameter(init_dof, requires_grad=True)
         # setup renderer
         self.H, self.W = self.cfg.camera_height, self.cfg.camera_width
-        self.renderer = NVDiffrastRenderer(width=self.W, height=self.H)
+        self.renderer = NVDiffrastRenderer(self.H, self.W)
         self.register_buffer(f"history_ops", torch.zeros(10000, 6))
 
     def forward(self, data):

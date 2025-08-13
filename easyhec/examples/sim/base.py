@@ -31,3 +31,6 @@ class Args:
     """the model config for sam2"""
     checkpoint: str = "sam2/checkpoints/sam2.1_hiera_large.pt"
     """the checkpoint for sam2"""
+
+    output_dir: str = "results/sim"
+    """Where to save the calibration results and any visualizations"""

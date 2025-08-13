@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 import gymnasium as gym
 import mani_skill.envs
@@ -130,6 +131,7 @@ def generate_synthetic_data(env: BaseEnv, samples: int, camera_name: str):
 
 @dataclass
 class ManiSkillArgs(Args):
+    output_dir: str = "results/maniskill"
     shader: str = "default"
     """Choice of shader to modify the rendering of the environment. default is a fast and cheap option, you can also try "rt" for ray-tracing option"""
 
@@ -246,8 +248,19 @@ def main(args: ManiSkillArgs):
 
     ### Print predicted results ###
     print(f"Predicted camera extrinsic")
-    print(f"OpenCV:\n{predicted_camera_extrinsic_opencv}")
-    print(f"ROS/SAPIEN/ManiSkill/Mujoco/Isaac:\n{predicted_camera_extrinsic_ros}")
+    print(f"OpenCV:\n{repr(predicted_camera_extrinsic_opencv)}")
+    print(f"ROS/SAPIEN/ManiSkill/Mujoco/Isaac:\n{repr(predicted_camera_extrinsic_ros)}")
+
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    np.save(
+        Path(args.output_dir) / "camera_extrinsic_opencv.npy",
+        predicted_camera_extrinsic_opencv,
+    )
+    np.save(
+        Path(args.output_dir) / "camera_extrinsic_ros.npy",
+        predicted_camera_extrinsic_ros,
+    )
+    np.save(Path(args.output_dir) / "camera_intrinsic.npy", intrinsic)
 
     visualization.visualize_extrinsic_results(
         images=images[args.samples :],
@@ -262,9 +275,9 @@ def main(args: ManiSkillArgs):
             ]
         ),
         labels=["Initial Extrinsic Guess", "Predicted Extrinsic", "Ground Truth"],
-        output_dir="results/maniskill",
+        output_dir=args.output_dir,
     )
-    print("Visualizations saved to results/maniskill")
+    print(f"Visualizations saved to {args.output_dir}")
 
 
 if __name__ == "__main__":

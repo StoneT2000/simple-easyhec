@@ -5,7 +5,7 @@ from easyhec.utils import utils_3d
 
 
 class NVDiffrastRenderer:
-    def __init__(self, width: int, height: int):
+    def __init__(self, height: int, width: int):
         self.H, self.W = height, width
         self.resolution = (height, width)
         blender2opencv = (
