@@ -71,7 +71,14 @@ python -m easyhec.examples.sim.maniskill -e StackCube-v1 --samples 5 \
 
 ### Real
 
-lerobot example is WIP.
+Example with a real robot is WIP (will share example with LeRobot SO100). Currently there is a fun example using letter or A sized paper (e.g. A4) to calibrate a real camera (intel realsense only at the moment). The code below will take one picture, ask you to annotate the paper to get a segmentation mask, then it optimizes for the camera extrinsics one shot. By default the optimization will be made such that the world "zero point" is at the exact center of the paper. The X,Y (Z is "up") are parallel to the paper's edges.  
+
+```bash
+python -m easyhec.examples.real.paper --paper-type a4 \
+  --model-cfg ../sam2/configs/sam2.1/sam2.1_hiera_l.yaml --checkpoint ../sam2/checkpoints/sam2.1_hiera_large.pt 
+```
+
+For more advanced usage with any of the above scripts we recommend you to copy the code and modify as needed. In general you only really need to modify the initial extrinsic guess and how you get the real camera images (for eg other cameras or multi-camera setups).
 
 ## Customization
 
