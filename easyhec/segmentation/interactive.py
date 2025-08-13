@@ -115,10 +115,14 @@ class InteractiveSegmentation:
             nonlocal annotation_objs, clicked_points
             if event.xdata is not None and event.ydata is not None:
                 x, y = int(event.xdata), int(event.ydata)
-                if x < 0 or x >= image.shape[1] or y < 0 or y >= image.shape[0]:
-                    return
-                clicked_points.append((x, y))
-                annotation_objs.append(plt.plot(x, y, "ro")[0])
+                if event.button == 3:
+                    clicked_points.append((x, y, 0))
+                    annotation_objs.append(plt.plot(x, y, "ro")[0])
+                else:
+                    if x < 0 or x >= image.shape[1] or y < 0 or y >= image.shape[0]:
+                        return
+                    clicked_points.append((x, y, 1))
+                    annotation_objs.append(plt.plot(x, y, "go")[0])
 
         def clear_drawn_points():
             nonlocal annotation_objs
@@ -153,8 +157,9 @@ class InteractiveSegmentation:
 
                 if key == "t":
                     if self.segmentation_model == "sam2":
-                        input_point = np.array(clicked_points)
-                        input_label = np.array([1] * len(clicked_points))
+                        clicked_points_np = np.array(clicked_points)
+                        input_label = clicked_points_np[:, 2]
+                        input_point = clicked_points_np[:, :2]
                         with torch.inference_mode(), torch.autocast(
                             "cuda", dtype=torch.bfloat16
                         ):
@@ -196,7 +201,9 @@ class InteractiveSegmentation:
                     annotation_objs = []
                     for pos in clicked_points:
                         annotation_objs.append(
-                            renderer.ax.plot(pos[0], pos[1], "ro")[0]
+                            renderer.ax.plot(
+                                pos[0], pos[1], "ro" if pos[2] == 0 else "go"
+                            )[0]
                         )
                 elif key == "r":
                     state = "annotation"

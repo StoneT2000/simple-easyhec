@@ -9,7 +9,7 @@ class Args:
 
     Some robot specific scripts provide code to collect this dataset and will provide an interface to do so for you if this argument is None."""
     urdf_path: Optional[str] = None
-    """path to the URDF file of the robot. Some robot specific scripts will provide a URDF file for you and this argument can be left as None."""
+    """path to the URDF file of the robot. Some robot specific scripts will provide a URDF file or generate meshes for you and this argument can be left as None."""
     batch_size: Optional[int] = None
     """batch size for the optimization. If none will use whole batch optimization"""
     train_steps: int = 5000
