@@ -71,9 +71,12 @@ python -m easyhec.examples.sim.maniskill -e StackCube-v1 --samples 5 \
 
 ### Real
 
-Example with a real robot is WIP (will share example with LeRobot SO100). Currently there is a fun example using letter or A sized paper (e.g. A4) to calibrate a real camera (intel realsense only at the moment). The code below will take one picture, ask you to annotate the paper to get a segmentation mask, then it optimizes for the camera extrinsics one shot. By default the optimization will be made such that the world "zero point" is at the exact center of the paper. The X,Y (Z is "up") are parallel to the paper's edges.  
+Example with a real robot is WIP (will share example with LeRobot SO100). Currently there is a fun example using letter or A sized paper (e.g. A4) to calibrate a real camera (intel realsense only at the moment). To get started make sure to install [SAM2](https://github.com/facebookresearch/sam2) which powers the image segmentation process. Install any packages for the real robot/cameras as necessary.
+
+The code below will take one picture, ask you to annotate the paper to get a segmentation mask, then it optimizes for the camera extrinsics one shot. By default the optimization will be made such that the world "zero point" is at the exact center of the paper. The X,Y axes are parallel to the paper's edges, and Z is the upwards direction.
 
 ```bash
+pip install pyrealsense2 # install the intel realsense package
 python -m easyhec.examples.real.paper --paper-type a4 \
   --model-cfg ../sam2/configs/sam2.1/sam2.1_hiera_l.yaml --checkpoint ../sam2/checkpoints/sam2.1_hiera_large.pt 
 ```
