@@ -18,6 +18,7 @@ from easyhec.utils.camera_conversions import opencv2ros, ros2opencv
 
 @dataclass
 class RealPaperArgs(Args):
+    """Calibrate a (realsense) camera with just a piece of standard sized paper. Note that this script might not work with your particular realsense camera, modify as needed.Other cameras can work if you modify the code to get the camera intrinsics and a single color image from the camera."""
     output_dir: str = "results/paper"
     paper_type: str = "letter"
     """The type of paper to use to calibrate against. Options are 'letter' or 'a4'"""
@@ -55,6 +56,8 @@ def main(args: RealPaperArgs):
     # Get the color stream profile and its intrinsics
     profile = pipeline.start(config)
     color_stream = profile.get_stream(rs.stream.color)
+
+    ### Fetch Intrinsics ###
     color_intrinsics = color_stream.as_video_stream_profile().get_intrinsics()
     intrinsic = np.array(
         [
@@ -66,6 +69,7 @@ def main(args: RealPaperArgs):
     )
     print(f"Camera Intrinsics:\n {repr(intrinsic)}")
 
+    ### Fetch one color image ###
     while True:
         frames = pipeline.wait_for_frames()
         cframe = frames.get_color_frame()
@@ -75,9 +79,10 @@ def main(args: RealPaperArgs):
         image = np.asanyarray(cframe.get_data())
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         break
-    # TODO (stao): allow more image captures
+
     images = [image]
 
+    ### Make an initial guess for the extrinsic ###
     # use what we put in sim as the initial guess
     initial_extrinsic_guess = np.eye(4)
 
@@ -94,9 +99,10 @@ def main(args: RealPaperArgs):
     paper_height = paper_sizes[args.paper_type]["height"]
     paper_box = trimesh.creation.box(extents=(paper_width, paper_height, 1e-3))
     meshes = [paper_box]
+    # We assume the world frame is centered at the paper and oriented to be perpendicular to the paper
     link_poses_dataset = np.stack(np.eye(4)).reshape(1, 1, 4, 4)
 
-    camera_mount_poses = None  # data["camera_mount_poses"]
+    camera_mount_poses = None
 
     interactive_segmentation = InteractiveSegmentation(
         segmentation_model="sam2",
