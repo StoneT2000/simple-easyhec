@@ -231,7 +231,7 @@ def main(args: ManiSkillArgs):
             camera_width=camera_width,
             camera_height=camera_height,
             camera_mount_poses=(
-                camera_mount_poses[: args.samples]
+                torch.from_numpy(camera_mount_poses[: args.samples]).float().to(device)
                 if camera_mount_poses is not None
                 else None
             ),
@@ -274,6 +274,7 @@ def main(args: ManiSkillArgs):
                 ground_truth_camera_pose,
             ]
         ),
+        camera_mount_poses=camera_mount_poses[args.samples :],
         labels=["Initial Extrinsic Guess", "Predicted Extrinsic", "Ground Truth"],
         output_dir=args.output_dir,
     )

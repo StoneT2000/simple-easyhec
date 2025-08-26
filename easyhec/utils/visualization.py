@@ -39,6 +39,8 @@ def visualize_extrinsic_results(
     camera_height, camera_width = images[0].shape[:2]
     renderer = NVDiffrastRenderer(camera_height, camera_width)
     extrinsics = torch.from_numpy(extrinsics).float().to(device)
+    if camera_mount_poses is not None:
+        camera_mount_poses = torch.from_numpy(camera_mount_poses).float().to(device)
     link_poses_dataset = torch.from_numpy(link_poses_dataset).float().to(device)
 
     for i in range(len(meshes)):
