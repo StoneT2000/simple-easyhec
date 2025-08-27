@@ -104,7 +104,7 @@ class InteractiveSegmentation:
         def print_help_message():
             if state == "annotation":
                 print(
-                    f"Currently annotating image {current_image_idx+1}/{len(images)}. Press 't' when done. Press 'r' to clear the current point annotation and redo the points"
+                    f"Currently annotating image {current_image_idx+1}/{len(images)}. Click to add a point of what to segment, right click to add a negative point of what not to segment. Press 't' when done. Press 'r' to clear the current point annotation and redo the points"
                 )
             elif state == "segmentation":
                 print(

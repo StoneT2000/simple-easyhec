@@ -18,6 +18,7 @@ def visualize_extrinsic_results(
     intrinsic: np.ndarray,
     extrinsics: np.ndarray,
     camera_mount_poses: Optional[np.ndarray] = None,
+    masks: Optional[np.ndarray] = None,
     labels: List[str] = [],
     output_dir="results/",
 ):
@@ -31,6 +32,7 @@ def visualize_extrinsic_results(
         intrinsic (np.ndarray, shape (3, 3)): Camera intrinsic matrix
         extrinsics (np.ndarray, shape (M, 4, 4)): Extrinsic matrices to visualize
         camera_mount_poses (np.ndarray, shape (N, 4, 4)): Camera mount poses relative to the robot base frame, where N is the number of samples. If none then camera is assumed to be fixed.
+        masks (np.ndarray, shape (N, H, W)): If given, will also display an image showing the masks used for optimization on top of the original images.
         labels (List[str]): List of labels for each of the extrinsics
         output_dir (str): Directory to save the visualizations
     """
@@ -77,12 +79,22 @@ def visualize_extrinsic_results(
             overlaid_images.append(images[i].copy())
             overlaid_images[-1][mask > 0] = overlaid_images[-1][mask > 0] // 4
 
-        plt.figure(figsize=(7 * len(extrinsics), 7))
+        num_subplots = len(extrinsics) + 1 if masks is not None else len(extrinsics)
+
+        plt.figure(figsize=(7 * num_subplots, 7))
         for j in range(len(extrinsics)):
-            plt.subplot(1, len(extrinsics), j + 1)
+            plt.subplot(1, num_subplots, j + 1)
             plt.imshow(overlaid_images[j])
             plt.axis("off")
             plt.title(labels[j])
+        
+        if masks is not None:
+            plt.subplot(1, num_subplots, num_subplots)
+            reference_mask = images[i].copy()
+            reference_mask[masks[i] > 0] = reference_mask[masks[i] > 0] // 4
+            plt.imshow(reference_mask)
+            plt.axis("off")
+            plt.title("Masks")
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         plt.savefig(f"{output_dir}/{i}.png")
