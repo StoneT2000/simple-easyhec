@@ -81,6 +81,7 @@ def visualize_extrinsic_results(
 
         num_subplots = len(extrinsics) + 1 if masks is not None else len(extrinsics)
 
+        plt.rcParams.update({'font.size': 16})  # Increase font size for all text elements
         figure = plt.figure(figsize=(7 * num_subplots, 7))
         for j in range(len(extrinsics)):
             plt.subplot(1, num_subplots, j + 1)
