@@ -67,6 +67,7 @@ def optimize(
         mask=robot_masks,
         mount_poses=camera_mount_poses,
     )
+    extrinsics = []
     if gt_camera_pose is not None:
         dataset["gt_camera_pose"] = gt_camera_pose
     for i in pbar:
@@ -84,11 +85,11 @@ def optimize(
             best_loss = loss_value
             best_predicted_extrinsic = solver.get_predicted_extrinsic()
             last_loss_improvement_step = i
-
+        extrinsics.append(best_predicted_extrinsic)
         if i - last_loss_improvement_step >= early_stopping_steps:
             break
         if verbose:
             pbar.set_description(f"Loss: {loss_value:.2f}, Best Loss: {best_loss:.2f}")
         if "metrics" in output:
             pbar.set_postfix(output["metrics"])
-    return best_predicted_extrinsic
+    return extrinsics

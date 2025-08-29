@@ -134,10 +134,25 @@ def main(args: RealPaperArgs):
             iterations=args.train_steps,
             early_stopping_steps=args.early_stopping_steps,
         )
-        .cpu()
-        .numpy()
     )
-    predicted_camera_extrinsic_ros = opencv2ros(predicted_camera_extrinsic_opencv)
+    # predicted_camera_extrinsic_ros = opencv2ros(predicted_camera_extrinsic_opencv)
+
+    vis_images = []
+    for i in range(0, len(predicted_camera_extrinsic_opencv), 4):
+        vis_image = visualization.visualize_extrinsic_results(
+            images=images,
+            link_poses_dataset=link_poses_dataset,
+            meshes=meshes,
+            intrinsic=intrinsic,
+            masks=robot_masks,
+            extrinsics=np.stack([initial_extrinsic_guess, predicted_camera_extrinsic_opencv[i].cpu().numpy()]),
+            labels=["Initial Extrinsic Guess", "Predicted Extrinsic"],
+            output_dir=args.output_dir,
+        )
+        vis_images.append(vis_image)
+
+    from mani_skill.utils.visualization import images_to_video
+    images_to_video(np.stack(vis_images), Path(args.output_dir), video_name="progression", fps=60)
 
     ### Print predicted results ###
 
@@ -161,6 +176,7 @@ def main(args: RealPaperArgs):
         link_poses_dataset=link_poses_dataset,
         meshes=meshes,
         intrinsic=intrinsic,
+        masks=robot_masks,
         extrinsics=np.stack(
             [initial_extrinsic_guess, predicted_camera_extrinsic_opencv]
         ),

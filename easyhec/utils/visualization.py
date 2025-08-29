@@ -81,7 +81,7 @@ def visualize_extrinsic_results(
 
         num_subplots = len(extrinsics) + 1 if masks is not None else len(extrinsics)
 
-        plt.figure(figsize=(7 * num_subplots, 7))
+        figure = plt.figure(figsize=(7 * num_subplots, 7))
         for j in range(len(extrinsics)):
             plt.subplot(1, num_subplots, j + 1)
             plt.imshow(overlaid_images[j])
@@ -94,7 +94,12 @@ def visualize_extrinsic_results(
             reference_mask[masks[i] > 0] = reference_mask[masks[i] > 0] // 4
             plt.imshow(reference_mask)
             plt.axis("off")
-            plt.title("Masks")
+            plt.title("Masks (SAM2)")
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
-        plt.savefig(f"{output_dir}/{i}.png")
+        plt.tight_layout()
+        # Convert the figure to a numpy array
+        figure.canvas.draw()
+        plot_image = np.asarray(figure.canvas.buffer_rgba())[:,:,:3]
+        plt.close()
+        return plot_image
