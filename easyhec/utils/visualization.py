@@ -97,4 +97,5 @@ def visualize_extrinsic_results(
             plt.title("Masks")
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
+        plt.tight_layout()
         plt.savefig(f"{output_dir}/{i}.png")

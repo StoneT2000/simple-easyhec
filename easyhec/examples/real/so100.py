@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+import logging
 import time
 import cv2
 import numpy as np
@@ -65,12 +66,39 @@ class SO100Args(Args):
     # TODO (stao): A1, A2, A3, follow a nice structure, we can just generate the meshes for those.
 
 
+# This is extrememly important to tune!
+CALIBRATION_OFFSET = {
+    "shoulder_pan": 0,
+    "shoulder_lift": 0,
+    "elbow_flex": 0,
+    "wrist_flex": 0,
+    "wrist_roll": 0,
+    "gripper": 0,
+}
+
+# For the author's SO100 they used this calibration offset. Yours might be different
+CALIBRATION_OFFSET = {
+    "shoulder_pan": -3,
+    "shoulder_lift": -3,
+    "elbow_flex": 0,
+    "wrist_flex": 5,
+    "wrist_roll": 0,
+    "gripper": 0,
+}
+
+
 def main(args: SO100Args):
+    user_tuned_calibration_offset = False
+    for k in CALIBRATION_OFFSET.keys():
+        if CALIBRATION_OFFSET[k] != 0:
+            user_tuned_calibration_offset = True
+            break
+    if not user_tuned_calibration_offset:
+        logging.warning("The calibration offset for sim2real/real2sim is not tuned!! Unless you are absolutely sure you will most likely get poor results.")
+
+
     robot: SO100Follower = create_real_robot("so100")
     robot.bus.motors["gripper"].norm_mode = MotorNormMode.DEGREES
-
-    # import ipdb; ipdb.set_trace()
-    # robot.send_action(action)
     robot.connect()
 
     cameras_ft = robot._cameras_ft
@@ -107,6 +135,8 @@ def main(args: SO100Args):
 
     def get_qpos(robot: SO100Follower, flat: bool = True):
         obs = robot.bus.sync_read("Present_Position")
+        for k in CALIBRATION_OFFSET.keys():
+            obs[k] = obs[k] - CALIBRATION_OFFSET[k]
         for k in obs.keys():
             obs[k] = np.deg2rad(obs[k])
         if not flat:
@@ -120,7 +150,7 @@ def main(args: SO100Args):
     def set_target_qpos(robot: SO100Follower, qpos: np.ndarray):
         action = {}
         for name, qpos_val in zip(joint_position_names, qpos):
-            action[name] = np.rad2deg(qpos_val)
+            action[name] = np.rad2deg(qpos_val) + CALIBRATION_OFFSET[name.removesuffix(".pos")]
         robot.send_action(action)
     
     robot_def_path = Path(__file__).parent / "robot_definitions" / "so100"
@@ -164,7 +194,7 @@ def main(args: SO100Args):
             dt_s = time.perf_counter() - start_loop_t
             set_target_qpos(robot, target_qpos)
             time.sleep(1 / control_freq - dt_s)
-        time.sleep(0.2) # give some time for the robot to settle, cheap arms don't hold up as well
+        time.sleep(1) # give some time for the robot to settle, cheap arms don't hold up as well
         qpos_dict = get_qpos(robot, flat=False)
         for cam_name, cam in robot.cameras.items():
             image_dataset[cam_name].append(cam.async_read())
