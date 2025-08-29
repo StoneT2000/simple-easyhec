@@ -67,10 +67,11 @@ def main(args: RealPaperArgs):
         ],
         dtype=np.float32,
     )
-    print(f"Camera Intrinsics:\n {repr(intrinsic)}")
 
     ### Fetch one color image ###
-    while True:
+    skip_frames = 60
+    print("Starting camera and warming it up...")
+    for _ in range(skip_frames):
         frames = pipeline.wait_for_frames()
         cframe = frames.get_color_frame()
         if not cframe:
@@ -78,8 +79,8 @@ def main(args: RealPaperArgs):
             continue
         image = np.asanyarray(cframe.get_data())
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        break
 
+    print(f"Camera Intrinsics:\n {repr(intrinsic)}")
     images = [image]
 
     ### Make an initial guess for the extrinsic ###
