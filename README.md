@@ -40,7 +40,7 @@ For those who don't want to manually segment their robot images you can use [SAM
 
 ### Real
 
-Example with a real robot is WIP (will share example with LeRobot SO100). Currently there is a fun example using letter or A sized paper (e.g. A4) to calibrate a real camera (intel realsense only at the moment). To get started make sure to install [SAM2](https://github.com/facebookresearch/sam2) which powers the image segmentation process. Install any packages for the real robot/cameras as necessary.
+Example with a real robot is WIP (will share example with LeRobot SO100). Currently there is a fun example using letter or A sized paper (e.g. A4) to calibrate a real camera (intel realsense only at the moment). To get started make sure to install [SAM2](https://github.com/facebookresearch/sam2) which powers the image segmentation process. Install any packages for the real robot/cameras as necessary. If you don't have the hardware you can try [this package out in simulation](#simulation).
 
 ![](./assets/optimization_progression.gif)
 
@@ -98,8 +98,8 @@ This repository is fairly minimal. The core optimization code is in `easyhec/opt
 
 ## Tuning Tips
 
-- It is recommended to get a diverse range of sample images that show the robot in different orientations. This is particularly more important for wrist cameras, which often only see the robot gripper.
-- The initial guess of the camera extrinsics does not have be good, but if the robot is up very close it may need to be more accurate. This can be the case for wrist cameras.
+- It is recommended to get a diverse range of sample images that show the robot in different orientations. This is particularly more important for wrist cameras, which often only see the robot gripper. This is also more important for more complicated robots in more complicated looking scenes where segmentation masks may not be perfect.
+- The initial guess of the camera extrinsics does not have to be good, but if the robot is up very close it may need to be more accurate. This can be the case for wrist cameras.
 - To ensure best results make sure you have fairly accurate visual meshes for the robot the camera is attached on / is pointing at. It is okay if the colors do not match, just the shapes need to match.
 - While it is best to have accurate visual meshes, this optimization can still work even if you don't include some parts from the real world. It may be useful to edit out poor segmentations.
 - It is okay if the loss is in the 1000s and does not go down. Loss values do not really reflect the accuracy of the extrinsic estimate since it can depend on camera resolution and how far away the robot is.
