@@ -9,7 +9,7 @@ from easyhec.optim.rb_solver import RBSolver, RBSolverConfig
 def optimize(
     initial_extrinsic_guess: torch.Tensor,
     camera_intrinsic: torch.Tensor,
-    robot_masks: torch.Tensor,
+    masks: torch.Tensor,
     link_poses_dataset: torch.Tensor,
     meshes: List[str],
     camera_width: int,
@@ -32,7 +32,7 @@ def optimize(
 
         initial_extrinsic_guess (torch.Tensor, shape (4, 4)): Initial guess of the camera extrinsic
         camera_intrinsic (torch.Tensor, shape (3, 3)): Camera intrinsic matrix
-        robot_masks (torch.Tensor, shape (N, H, W)): Robot segmentation masks
+        masks (torch.Tensor, shape (N, H, W)): Robot segmentation masks
         link_poses_dataset (torch.Tensor, shape (N, L, 4, 4)): Link poses relative to any frame (e.g. the robot base frame), where N is the number of samples, L is the number of links
         meshes (List[str | trimesh.Trimesh]): List of paths to the mesh files of each of the L links. Can also be a list of trimesh.Trimesh objects.
         camera_width (int): Camera width
@@ -49,7 +49,7 @@ def optimize(
     cfg = RBSolverConfig(
         camera_width=camera_width,
         camera_height=camera_height,
-        robot_masks=robot_masks,
+        robot_masks=masks,
         link_poses_dataset=link_poses_dataset,
         meshes=meshes,
         initial_extrinsic_guess=initial_extrinsic_guess,
@@ -64,7 +64,7 @@ def optimize(
     dataset = dict(
         intrinsic=camera_intrinsic,
         link_poses=link_poses_dataset,
-        mask=robot_masks,
+        mask=masks,
         mount_poses=camera_mount_poses,
     )
     if gt_camera_pose is not None:

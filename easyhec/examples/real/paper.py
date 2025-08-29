@@ -111,13 +111,13 @@ def main(args: RealPaperArgs):
             checkpoint=args.checkpoint, model_cfg=args.model_cfg
         ),
     )
-    robot_masks = interactive_segmentation.get_segmentation(images)
+    masks = interactive_segmentation.get_segmentation(images)
 
     ### run the optimization given the data ###
     predicted_camera_extrinsic_opencv = (
         optimize(
             camera_intrinsic=torch.from_numpy(intrinsic).float().to(device),
-            robot_masks=torch.from_numpy(robot_masks).float().to(device),
+            masks=torch.from_numpy(masks).float().to(device),
             link_poses_dataset=torch.from_numpy(link_poses_dataset).float().to(device),
             initial_extrinsic_guess=torch.tensor(initial_extrinsic_guess)
             .float()
@@ -164,6 +164,7 @@ def main(args: RealPaperArgs):
         extrinsics=np.stack(
             [initial_extrinsic_guess, predicted_camera_extrinsic_opencv]
         ),
+        masks=masks,
         labels=["Initial Extrinsic Guess", "Predicted Extrinsic"],
         output_dir=args.output_dir,
     )

@@ -218,7 +218,7 @@ def main(args: ManiSkillArgs):
     predicted_camera_extrinsic_opencv = (
         optimize(
             camera_intrinsic=torch.from_numpy(intrinsic).float().to(device),
-            robot_masks=torch.from_numpy(robot_masks[: args.samples])
+            masks=torch.from_numpy(robot_masks[: args.samples])
             .float()
             .to(device),
             link_poses_dataset=torch.from_numpy(link_poses_dataset[: args.samples])
