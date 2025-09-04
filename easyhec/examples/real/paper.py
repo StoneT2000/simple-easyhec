@@ -22,6 +22,8 @@ class RealPaperArgs(Args):
     output_dir: str = "results/paper"
     paper_type: str = "letter"
     """The type of paper to use to calibrate against. Options are 'letter' or 'a4'"""
+    realsense_camera_serial_id: str = "none"
+    """The serial id of the realsense camera to use for calibration"""
     # TODO (stao): A1, A2, A3, follow a nice structure, we can just generate the meshes for those.
 
 
@@ -46,10 +48,21 @@ def main(args: RealPaperArgs):
     # Initialize RealSense configuration
     config = rs.config()
     pipeline = rs.pipeline()
+    ctx = rs.context()
+    devices = ctx.query_devices()
+    if len(devices) == 0:
+        raise RuntimeError("No RealSense devices found.")
 
     # Configure streams
     camera_width = 1280
     camera_height = 720
+    if args.realsense_camera_serial_id == "none":
+        print("No realsense camera serial id provided, using the first device found")
+        realsense_camera_serial_id = devices[0].get_info(rs.camera_info.serial_number)
+    else:
+        realsense_camera_serial_id = args.realsense_camera_serial_id
+    print(f"RealSense device id: {realsense_camera_serial_id}")
+    config.enable_device(realsense_camera_serial_id)
     config.enable_stream(
         rs.stream.color, camera_width, camera_height, rs.format.bgr8, 30
     )
