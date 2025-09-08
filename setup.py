@@ -2,8 +2,9 @@ from setuptools import find_packages, setup
 
 setup(
     name="easyhec",
-    version="0.1.0",
+    version="0.1.1",
     packages=find_packages(),
+    author="Stone Tao",
     install_requires=[
         "tyro",
         "torch",
