@@ -35,15 +35,18 @@ class SO100Args(Args):
     
     For your own usage you may have a different camera setup, robot, calibration offsets etc., so we recommend you to copy this file at https://github.com/stonet2000/simple-easyhec/blob/main/easyhec/examples/real/so100.py. 
     
-    Before usage make sure to look for all comments that start with "CHECK:" which highlight the following:
+    Before usage make sure to calibrate the robot's motors according to the LeRobot tutorial and look for all comments that start with "CHECK:" which highlight the following:
 
     1. Check the robot config and make sure the correct camera is used. The default script is for a single realsense camera labelled as "base_camera".
     2. Check and modify the CALIBRATION_OFFSET dictionary to match your own robot's calibration offsets. This is extremely important to tune and is necessary since the 0 degree position of the joints in the real world when calibrated with LeRobot currently do not match the 0 degree position when rendered/simulated.
     3. Modify the initial extrinsic guess if the optimization process fails to converge to a good solution. To save time you can also turn on --use-previous-captures to skip the data collection process if already done once.
+
+    Note that LeRobot SO100 motor calibration is done by moving most joints from one end to another. Make sure to move the joints are far as possible during the LeRobot tutorial on caibration for best results.
+
     """
     output_dir: str = "results/so100"
     use_previous_captures: bool = False
-    """If True, will use the previous collectede images and robot segmentations if they exist which can save you time. Otherwise, will prompt you to generate a new segmentation mask. This is useful if you find the initial extrinsic guess is not good enough and simply want to refine that and want to skip the segmentation process."""
+    """If True, will use the previous collected images and robot segmentations if they exist which can save you time. Otherwise, will prompt you to generate a new segmentation mask. This is useful if you find the initial extrinsic guess is not good enough and simply want to refine that and want to skip the segmentation process."""
 
     robot_id: Optional[str] = None
     """LeRobot robot ID. If provided will control that robot and will save results to {output_dir}/{robot_id}"""
@@ -185,7 +188,7 @@ def main(args: SO100Args):
     if args.use_previous_captures and (Path(args.output_dir) / robot_id / "link_poses_dataset.npy").exists():
         # load the previous captures
         link_poses_dataset = np.load(Path(args.output_dir) / robot_id / "link_poses_dataset.npy")
-        image_dataset = np.load(Path(args.output_dir) / robot_id / "image_dataset.npy")
+        image_dataset = np.load(Path(args.output_dir) / robot_id / "image_dataset.npy", allow_pickle=True).reshape(-1)[0]
     else:
         # reference qpos positions to calibrate with    
         qpos_samples = [
