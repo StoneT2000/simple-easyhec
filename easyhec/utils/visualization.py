@@ -2,6 +2,7 @@ import os.path as osp
 from pathlib import Path
 from typing import List, Optional
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -21,6 +22,7 @@ def visualize_extrinsic_results(
     masks: Optional[np.ndarray] = None,
     labels: List[str] = [],
     output_dir="results/",
+    return_rgb: bool = False,
 ):
     """
     Visualizes a given list of extrinsic matrices and draws the mask cameras at those extrinsics would project on the original RGB images.
@@ -81,6 +83,7 @@ def visualize_extrinsic_results(
 
         num_subplots = len(extrinsics) + 1 if masks is not None else len(extrinsics)
 
+        plt.rcParams.update({'font.size': 16})  # Increase font size for all text elements
         plt.figure(figsize=(7 * num_subplots, 7))
         for j in range(len(extrinsics)):
             plt.subplot(1, num_subplots, j + 1)
@@ -97,4 +100,8 @@ def visualize_extrinsic_results(
             plt.title("Masks")
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
+        plt.tight_layout()
         plt.savefig(f"{output_dir}/{i}.png")
+        plt.close()
+        if return_rgb:
+            return cv2.cvtColor(cv2.imread(f"{output_dir}/{i}.png"), cv2.COLOR_BGR2RGB)

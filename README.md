@@ -38,13 +38,17 @@ For those who don't want to manually segment their robot images you can use [SAM
 
 ## Usage
 
-### Real
+We provide two real-world examples of this codebase. One with the low-cost [LeRobot SO100 Arm](#so100-arm), and another fun example with [letter/A sized paper](#paper) (e.g. A4) to calibrate real cameras. We further provide a [simulated example](#simulation) as well.
 
-Example with a real robot is WIP (will share example with LeRobot SO100). Currently there is a fun example using letter or A sized paper (e.g. A4) to calibrate a real camera (intel realsense only at the moment). To get started make sure to install [SAM2](https://github.com/facebookresearch/sam2) which powers the image segmentation process. Install any packages for the real robot/cameras as necessary. If you don't have the hardware you can try [this package out in simulation](#simulation).
+To get started make sure to install [SAM2](https://github.com/facebookresearch/sam2) which powers the image segmentation process. Install any packages for the real robot/cameras as necessary. If you don't have the hardware you can try [this package out in simulation](#simulation).
 
-![](./assets/optimization_progression.gif)
+We provide some already pre-written scripts using EasyHec, but many real-world setups differ a lot. We recommend you to copy the code and modify as needed. In general you only really need to modify the initial extrinsic guess and how you get the real camera images (for eg other cameras or multi-camera setups).
 
-The code below will take one picture, ask you to annotate the paper to get a segmentation mask, then it optimizes for the camera extrinsics one shot. By default the optimization will be made such that the world "zero point" is at the exact center of the paper. The X,Y axes are parallel to the paper's edges, and Z is the upwards direction.
+### Paper
+
+![](./assets/paper_optimization_progression.gif)
+
+The code below will take one picture, ask you to annotate the paper to get a segmentation mask, then it optimizes for the camera extrinsics one shot. By default the optimization will be made such that the world "zero point" is at the exact center of the paper. The X,Y axes are parallel to the paper's edges, and Z is the upwards direction. Results are saved to `results/paper`.
 
 ```bash
 pip install pyrealsense2 # install the intel realsense package
@@ -52,8 +56,22 @@ python -m easyhec.examples.real.paper --paper-type a4 \
   --model-cfg ../sam2/configs/sam2.1/sam2.1_hiera_l.yaml --checkpoint ../sam2/checkpoints/sam2.1_hiera_large.pt 
 ```
 
-For more advanced usage with any of the above scripts we recommend you to copy the code and modify as needed. In general you only really need to modify the initial extrinsic guess and how you get the real camera images (for eg other cameras or multi-camera setups).
 
+### SO100 Arm
+
+![](./assets/so100_optimization_progression.gif)
+
+The code below will take a few pictures, ask you to annotate the robot to get a segmentation mask, then it optimizes for the camera extrinsics one shot. It will calibrate the camera extrinsics relative to the robot base. Results are saved to `results/so100/{robot_id}/{camera_id}`. Note that the robot-id is the same one you use to calibrate the robot initially with LeRobot.
+
+```bash
+python -m easyhec.examples.real.so100 \
+  --model-cfg ../sam2/configs/sam2.1/sam2.1_hiera_l.yaml --checkpoint ../sam2/checkpoints/sam2.1_hiera_large.pt \
+  --early-stopping-steps 1000 \
+  --robot-id my_robot_id \
+  --realsense_camera_serial_id 146322070293
+```
+
+The LeRobot arms have some tuning caveats. For best results we recommend you follow the instructions printed by the help message (add `--help` to the script arguments). These primarily revolve around the robot calibration and how to fix it's sim2real gap offsets and initial extrinsic guess tuning.
 
 ### Simulation
 
