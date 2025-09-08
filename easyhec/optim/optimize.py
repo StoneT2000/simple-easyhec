@@ -21,6 +21,7 @@ def optimize(
     batch_size: Optional[int] = None,
     early_stopping_steps: int = 200,
     verbose: bool = True,
+    return_history: bool = False,
 ):
     """
     Optimizes an initial guess of a camera extrinsic using the camera intrinsic matrix, a dataset of robot masks, link poses relative to the robot base frame, and paths to the mesh files of each of the link poses.
@@ -44,6 +45,7 @@ def optimize(
         gt_camera_pose (torch.Tensor, shape (4, 4)): Default is None. If a ground truth camera pose is provided the optimization function will compute error metrics relative to the ground truth camera pose.
         early_stopping_steps (int): Default is 200. If the loss has not improved after this many steps the optimization will stop.
         verbose (bool): Default is True. If True, will print the loss value and a progress bar.
+        return_history (bool): Default is False. If True, will return a list of all the current and previous best predicted extrinsics.
     """
     device = initial_extrinsic_guess.device
     cfg = RBSolverConfig(
@@ -69,6 +71,9 @@ def optimize(
     )
     if gt_camera_pose is not None:
         dataset["gt_camera_pose"] = gt_camera_pose
+
+    if return_history:
+        extrinsics = []
     for i in pbar:
         if batch_size is None:
             batch = dataset
@@ -84,11 +89,15 @@ def optimize(
             best_loss = loss_value
             best_predicted_extrinsic = solver.get_predicted_extrinsic()
             last_loss_improvement_step = i
-
+            if return_history:
+                extrinsics.append(best_predicted_extrinsic)
         if i - last_loss_improvement_step >= early_stopping_steps:
             break
         if verbose:
             pbar.set_description(f"Loss: {loss_value:.2f}, Best Loss: {best_loss:.2f}")
         if "metrics" in output:
             pbar.set_postfix(output["metrics"])
-    return best_predicted_extrinsic
+    if return_history:
+        return torch.stack(extrinsics)
+    else:
+        return best_predicted_extrinsic
