@@ -12,7 +12,7 @@ We also provide some real/simulated examples that calibrate with a robot
 
 ![](./assets/sim_example.png)
 
-Another example below shows it working for a mounted camera. Notice that the initial extrinsic guess is so bad that the segmentation covers the whole image.
+Another example below shows it working for a mounted camera.
 
 ![](./assets/sim_example_mounted_camera.png)
 
