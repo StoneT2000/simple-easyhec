@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="easyhec",
-    version="0.1.2",
+    version="0.1.3",
     packages=find_packages(),
     author="Stone Tao",
     install_requires=[
