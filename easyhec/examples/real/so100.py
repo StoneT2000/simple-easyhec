@@ -5,12 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-import cv2
-import gymnasium as gym
 import numpy as np
-import pyrealsense2 as rs
 import torch
-import trimesh
 import tyro
 from lerobot.cameras.realsense import RealSenseCamera
 from lerobot.cameras.realsense.configuration_realsense import \
