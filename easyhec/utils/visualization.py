@@ -2,12 +2,13 @@ import os.path as osp
 from pathlib import Path
 from typing import List, Optional
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import trimesh
 from tqdm import tqdm
-import cv2
+
 from easyhec.optim.nvdiffrast_renderer import NVDiffrastRenderer
 
 

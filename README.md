@@ -46,7 +46,7 @@ We provide some already pre-written scripts using EasyHec, but many real-world s
 
 ### Paper
 
-![](./assets/optimization_progression.gif)
+![](./assets/paper_optimization_progression.gif)
 
 The code below will take one picture, ask you to annotate the paper to get a segmentation mask, then it optimizes for the camera extrinsics one shot. By default the optimization will be made such that the world "zero point" is at the exact center of the paper. The X,Y axes are parallel to the paper's edges, and Z is the upwards direction. Results are saved to `results/paper`.
 
@@ -58,6 +58,8 @@ python -m easyhec.examples.real.paper --paper-type a4 \
 
 
 ### SO100 Arm
+
+![](./assets/so100_optimization_progression.gif)
 
 The code below will take a few pictures, ask you to annotate the robot to get a segmentation mask, then it optimizes for the camera extrinsics one shot. It will calibrate the camera extrinsics relative to the robot base. Results are saved to `results/so100/{robot_id}/{camera_id}`. Note that the robot-id is the same one you use to calibrate the robot initially with LeRobot.
 

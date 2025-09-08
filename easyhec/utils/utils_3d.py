@@ -3,8 +3,10 @@ import numpy as np
 import torch
 import trimesh
 
-from easyhec.utils.pytorch3d_se3 import _get_se3_V_input, _se3_V_matrix, se3_exp_map
+from easyhec.utils.pytorch3d_se3 import (_get_se3_V_input, _se3_V_matrix,
+                                         se3_exp_map)
 from easyhec.utils.pytorch3d_se3 import se3_log_map as se3_log_map_pytorch3d
+
 
 def merge_meshes(meshes: list[trimesh.Trimesh]):
     n, vs, fs = 0, [], []

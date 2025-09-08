@@ -1,34 +1,37 @@
-from dataclasses import dataclass
-from typing import Optional
-from pathlib import Path
 import logging
 import time
+from collections import defaultdict
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
+
 import cv2
+import gymnasium as gym
 import numpy as np
 import pyrealsense2 as rs
 import torch
 import trimesh
 import tyro
+from lerobot.cameras.realsense import RealSenseCamera
+from lerobot.cameras.realsense.configuration_realsense import \
+    RealSenseCameraConfig
+from lerobot.motors.motors_bus import MotorNormMode
+from lerobot.robots.robot import Robot
+from lerobot.robots.so100_follower.config_so100_follower import \
+    SO100FollowerConfig
+from lerobot.robots.so100_follower.so100_follower import SO100Follower
+from lerobot.robots.utils import make_robot_from_config
 from transforms3d.euler import euler2mat
-from collections import defaultdict
+from urchin import URDF
+
 from easyhec.examples.real.base import Args
 from easyhec.optim.optimize import optimize
 from easyhec.segmentation.interactive import InteractiveSegmentation
 from easyhec.utils import visualization
 from easyhec.utils.camera_conversions import opencv2ros, ros2opencv
-
-from pathlib import Path
-import gymnasium as gym
-from lerobot.robots.robot import Robot
-from lerobot.robots.so100_follower.config_so100_follower import SO100FollowerConfig
-from lerobot.robots.so100_follower.so100_follower import SO100Follower
-from lerobot.robots.utils import make_robot_from_config
-import numpy as np
-from lerobot.cameras.realsense.configuration_realsense import RealSenseCameraConfig
-from lerobot.cameras.realsense import RealSenseCamera
-from urchin import URDF
-from lerobot.motors.motors_bus import MotorNormMode
 from easyhec.utils.utils_3d import merge_meshes
+
+
 @dataclass
 class SO100Args(Args):
     """Calibrate a (realsense) camera with LeRobot SO100. Note that this script might not work with your particular realsense camera, modify as needed. Other cameras can work if you modify the code to get the camera intrinsics and a single color image from the camera. Results are saved to {output_dir} and organized by the camera name specified in the robot config. Currently only supports off-hand cameras
