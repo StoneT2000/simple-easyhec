@@ -4,9 +4,11 @@ This repo provides (mostly) pip installable code to easily calibrate a camera (m
 
 Below shows the progression of the optimization of the extrinsic prediction. The first image shows the bad initial guess, the second image shows the predicted extrinsics, the third image shows the segmentation masks (generated with Segment Anything Model 2). The shaded mask in the first two images represent where the renderer would render the object (the paper) at the given extrinsics.
 
-![](./assets/optimization_progression.gif)
+![](./assets/paper_optimization_progression.gif.gif)
 
-We also provide some simulated examples that calibrate with a robot
+We also provide some real/simulated examples that calibrate with a robot
+
+![](./assets/so100_optimization_progression.gif)
 
 ![](./assets/sim_example.png)
 
