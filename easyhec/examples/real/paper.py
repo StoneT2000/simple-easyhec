@@ -156,7 +156,7 @@ def main(args: RealPaperArgs):
 
     print(f"Predicted camera extrinsic")
     print(f"OpenCV:\n{repr(predicted_camera_extrinsic_opencv)}")
-    print(f"ROS/SAPIEN/ManiSkill:\n{repr(predicted_camera_extrinsic_ros)}")
+    print(f"ROS/SAPIEN/ManiSkill/Mujoco/Isaac:\n{repr(predicted_camera_extrinsic_ros)}")
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     np.save(
