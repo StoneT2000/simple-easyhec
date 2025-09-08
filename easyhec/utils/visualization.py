@@ -84,24 +84,24 @@ def visualize_extrinsic_results(
         num_subplots = len(extrinsics) + 1 if masks is not None else len(extrinsics)
 
         plt.rcParams.update({'font.size': 16})  # Increase font size for all text elements
-        plt.figure(figsize=(7 * num_subplots, 7))
+        fig = plt.figure(figsize=(7 * num_subplots, 8))
         for j in range(len(extrinsics)):
-            plt.subplot(1, num_subplots, j + 1)
-            plt.imshow(overlaid_images[j])
-            plt.axis("off")
-            plt.title(labels[j])
+            ax = fig.add_subplot(1, num_subplots, j + 1)
+            ax.imshow(overlaid_images[j])
+            ax.axis("off")
+            ax.set_title(labels[j])
         
         if masks is not None:
-            plt.subplot(1, num_subplots, num_subplots)
+            ax = fig.add_subplot(1, num_subplots, num_subplots)
             reference_mask = images[i].copy()
             reference_mask[masks[i] > 0] = reference_mask[masks[i] > 0] // 4
-            plt.imshow(reference_mask)
-            plt.axis("off")
-            plt.title("Masks")
+            ax.imshow(reference_mask)
+            ax.axis("off")
+            ax.set_title("Masks")
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         plt.tight_layout()
-        plt.savefig(f"{output_dir}/{i}.png")
+        fig.savefig(f"{output_dir}/{i}.png")
         plt.close()
         if return_rgb:
             return cv2.cvtColor(cv2.imread(f"{output_dir}/{i}.png"), cv2.COLOR_BGR2RGB)

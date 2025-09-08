@@ -274,7 +274,7 @@ def main(args: ManiSkillArgs):
                 ground_truth_camera_pose,
             ]
         ),
-        camera_mount_poses=camera_mount_poses[args.samples :],
+        camera_mount_poses=camera_mount_poses[args.samples :] if camera_mount_poses is not None else None,
         labels=["Initial Extrinsic Guess", "Predicted Extrinsic", "Ground Truth"],
         output_dir=args.output_dir,
     )
