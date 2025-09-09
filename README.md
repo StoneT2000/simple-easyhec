@@ -40,7 +40,7 @@ For those who don't want to manually segment their robot images you can use [SAM
 
 ## Usage
 
-We provide two real-world examples of this codebase. One with the low-cost [LeRobot SO100 Arm](#so100-arm), and another fun example with [letter/A sized paper](#paper) (e.g. A4) to calibrate real cameras. We further provide a [simulated example](#simulation) as well.
+We provide two real-world examples of this codebase. One with the low-cost [LeRobot SO100 Arm](#so100-arm), and another fun example with [letter/A sized paper](#paper) (e.g. A4) to calibrate real cameras. We further provide a [simulated example](#simulation) as well. While all these examples can be run with no additional code, for your own use-cases you are recommended to copy the example scripts and modify as needed. Scripts when copy-pasted should run with no python errors out of the box.
 
 To get started make sure to install [SAM2](https://github.com/facebookresearch/sam2) which powers the image segmentation process. Install any packages for the real robot/cameras as necessary. If you don't have the hardware you can try [this package out in simulation](#simulation).
 
@@ -50,7 +50,9 @@ We provide some already pre-written scripts using EasyHec, but many real-world s
 
 ![](./assets/paper_optimization_progression.gif)
 
-The code below will take one picture, ask you to annotate the paper to get a segmentation mask, then it optimizes for the camera extrinsics one shot. By default the optimization will be made such that the world "zero point" is at the exact center of the paper. The X,Y axes are parallel to the paper's edges, and Z is the upwards direction. Results are saved to `results/paper`.
+[Script Code](./easyhec/examples/real/paper.py)
+
+The script below will take one picture, ask you to annotate the paper to get a segmentation mask, then it optimizes for the camera extrinsics one shot. By default the optimization will be made such that the world "zero point" is at the exact center of the paper. The X,Y axes are parallel to the paper's edges, and Z is the upwards direction. Results are saved to `results/paper`.
 
 ```bash
 pip install pyrealsense2 # install the intel realsense package
@@ -63,9 +65,13 @@ python -m easyhec.examples.real.paper --paper-type a4 \
 
 ![](./assets/so100_optimization_progression.gif)
 
-The code below will take a few pictures, ask you to annotate the robot to get a segmentation mask, then it optimizes for the camera extrinsics one shot. It will calibrate the camera extrinsics relative to the robot base. Results are saved to `results/so100/{robot_id}/{camera_id}`. Note that the robot-id is the same one you use to calibrate the robot initially with LeRobot.
+[Script Code](./easyhec/examples/real/so100.py)
+
+The script below will take a few pictures, ask you to annotate the robot to get a segmentation mask, then it optimizes for the camera extrinsics one shot. It will calibrate the camera extrinsics relative to the robot base. Results are saved to `results/so100/{robot_id}/{camera_id}`. Note that the robot-id is the same one you use to calibrate the robot initially with LeRobot.
 
 ```bash
+pip install pyrealsense2 # install the intel realsense package
+pip install lerobot[feetech] # install lerobot to control the arm
 python -m easyhec.examples.real.so100 \
   --model-cfg ../sam2/configs/sam2.1/sam2.1_hiera_l.yaml --checkpoint ../sam2/checkpoints/sam2.1_hiera_large.pt \
   --early-stopping-steps 1000 \
@@ -76,6 +82,8 @@ python -m easyhec.examples.real.so100 \
 The LeRobot arms have some tuning caveats. For best results we recommend you follow the instructions printed by the help message (add `--help` to the script arguments). These primarily revolve around the robot calibration and how to fix it's sim2real gap offsets and initial extrinsic guess tuning.
 
 ### Simulation
+
+[Script Code](./easyhec/examples/sim/maniskill.py)
 
 To test in simulation we provide an example through maniskill. The example generates 5 training synthetic images of the Franka/Panda robot with segmentation masks of the robot in random joint positions sampled around the initial joint position, and an initial extrinsic camera guess noisly sampled around the ground truth. By default 10 test images of the robot in different configurations are tested on and saved locally to the `results/` folder. This simulation also has raytracing for nicer renders which is disabled by default, turn it on by adding --shader rt
 
