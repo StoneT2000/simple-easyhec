@@ -1,4 +1,5 @@
 from pathlib import Path
+
 try:
     import sam2
 except ModuleNotFoundError:

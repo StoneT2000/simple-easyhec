@@ -20,6 +20,7 @@ from lerobot.robots.utils import make_robot_from_config
 from transforms3d.euler import euler2mat
 from urchin import URDF
 
+from easyhec import ROBOT_DEFINITIONS_DIR
 from easyhec.examples.real.base import Args
 from easyhec.optim.optimize import optimize
 from easyhec.segmentation.interactive import InteractiveSegmentation
@@ -174,7 +175,7 @@ def main(args: SO100Args):
             action[name] = np.rad2deg(qpos_val) + CALIBRATION_OFFSET[name.removesuffix(".pos")]
         robot.send_action(action)
     
-    robot_def_path = Path(__file__).parent / "robot_definitions" / "so100"
+    robot_def_path = ROBOT_DEFINITIONS_DIR / "so100"
     robot_urdf = URDF.load(str(robot_def_path / "so100.urdf"))
 
     meshes = []
