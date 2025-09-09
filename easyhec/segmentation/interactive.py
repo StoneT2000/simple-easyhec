@@ -2,60 +2,11 @@
 Tools for interactive segmentation
 """
 
-import sys
-
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
-
-
-class ImageRenderer:
-    def __init__(self, wait_for_button_press=True):
-        """
-        Create a very light-weight image renderer.
-
-        Args:
-            wait_for_button_press (bool): If True, each call to this renderer will pause the process until the user presses any key.
-            event_handler: Code to run given an event / button press. If None the default is mapping 'escape' and 'q' to sys.exit(0)
-        """
-        self._image = None
-        self.last_event = None
-        self.wait_for_button_press = wait_for_button_press
-        self.pressed_keys = set()
-
-    def key_press_handler(self, event):
-        self.last_event = event
-        self.pressed_keys.add(event.key)
-        if event.key in ["q", "escape"]:
-            sys.exit(0)
-
-    def key_release_handler(self, event):
-        if event.key in self.pressed_keys:
-            self.pressed_keys.remove(event.key)
-
-    def __call__(self, buffer):
-        if not self._image:
-            plt.ion()
-            self.fig, self.ax = plt.subplots()
-            self._image = self.ax.imshow(buffer, animated=True)
-            self.fig.canvas.mpl_connect("key_press_event", self.key_press_handler)
-            self.fig.canvas.mpl_connect("key_release_event", self.key_release_handler)
-        else:
-            self._image.set_data(buffer)
-        if self.wait_for_button_press:
-            plt.waitforbuttonpress()
-        else:
-            self.fig.canvas.draw_idle()
-            self.fig.canvas.flush_events()
-        plt.draw()
-
-    def __del__(self):
-        self.close()
-
-    def close(self):
-        plt.ioff()
-        plt.close()
 
 
 class InteractiveSegmentation:
@@ -94,68 +45,67 @@ class InteractiveSegmentation:
 
         There are a few other options that let the user e.g. redo the segmentation, redo the points etc., see the terminal output for help
         """
-        renderer = ImageRenderer(wait_for_button_press=False)
         state = "annotation"
         current_image_idx = 0
         masks = []
-        annotation_objs = []
         clicked_points = []
 
+        state = "annotation"
+
         def print_help_message():
-            if state == "annotation":
-                print(
-                    f"Currently annotating image {current_image_idx+1}/{len(images)}. Click to add a point of what to segment, right click to add a negative point of what not to segment. Press 't' when done. Press 'r' to clear the current point annotation and redo the points"
-                )
-            elif state == "segmentation":
-                print(
-                    f"Currently showing the predicted segmentation for image {current_image_idx+1}/{len(images)}. Press 't' to move on to the next image. Press 'e' to delete this segmentation and edit the existing annotation points. Press 'r' to delete this segmentation and re-annotate the points for this image."
-                )
+            print(
+                f"Currently annotating image {current_image_idx+1}/{len(images)}. Click to add a point of what to segment, right click to add a negative point of what not to segment. Press 't' to generate a candidate segmentation mask. Press 'r' to clear the current point annotation. Press 'e' to edit the existing annotation points."
+            )
 
-        def onclick(event):
-            nonlocal annotation_objs, clicked_points
-            if event.xdata is not None and event.ydata is not None:
-                x, y = int(event.xdata), int(event.ydata)
-                if event.button == 3:
-                    clicked_points.append((x, y, 0))
-                    annotation_objs.append(plt.plot(x, y, "ro")[0])
-                else:
-                    if x < 0 or x >= image.shape[1] or y < 0 or y >= image.shape[0]:
-                        return
-                    clicked_points.append((x, y, 1))
-                    annotation_objs.append(plt.plot(x, y, "go")[0])
+        def mouse_callback(event, x, y, flags, param):
+            nonlocal clicked_points
+            if event == cv2.EVENT_LBUTTONDOWN:
+                clicked_points.append((x, y, 1))
+            elif event == cv2.EVENT_RBUTTONDOWN:
+                clicked_points.append((x, y, -1))
 
-        def clear_drawn_points():
-            nonlocal annotation_objs
-            for x in annotation_objs:
-                x.remove()
-            annotation_objs = []
-
-        renderer(images[0])
-        renderer.ax.axis("off")
-        cid = None
-        print(
-            f"Starting annotation process for {len(images)} images. Press 't' to finish annotation, 'r' to redo annotation. Press 'h' for help."
+        # Display the image and set mouse callback
+        annotation_window_name = "Annotation: Click for positive points, right click for negative points. 'r' to reset, 'e' to edit, 't' to generate the segmentation"
+        check_window_name = (
+            "Check segmentation quality. Press 't' to proceed. Press 'e' to edit again."
         )
-        print("--------------------------------")
-        print_help_message()
-        while current_image_idx < len(images):
-            image = images[current_image_idx].copy()
-            key = renderer.last_event.key if renderer.last_event is not None else None
-            if renderer.last_event is not None:
-                renderer.last_event = None
-            if key == "q":
-                renderer.close()
-                return None
-            if key == "h":
-                print_help_message()
-            if state == "annotation":
-                cid = renderer.fig.canvas.mpl_connect("button_press_event", onclick)
-                renderer.ax.set_title(
-                    "Click on the image to record annotation points for segmentation"
-                )
-                renderer(image)
+        cv2.namedWindow(annotation_window_name, cv2.WINDOW_GUI_NORMAL)
+        cv2.setMouseCallback(annotation_window_name, mouse_callback)
 
-                if key == "t":
+        print_help_message()
+
+        point_size = int(0.01 * (images[0].shape[0] + images[0].shape[1]) / 2)
+        while current_image_idx < len(images):
+            display_img = images[current_image_idx].copy()
+            image = display_img.copy()
+            key = cv2.waitKey(1)
+            if state == "annotation":
+                if clicked_points:
+                    for x, y, label in clicked_points:
+                        cv2.circle(
+                            display_img,
+                            (x, y),
+                            point_size,
+                            (25, 200, 25) if label == 1 else (200, 25, 25),
+                            -1,
+                        )
+                if key == ord("r"):
+                    print("(r)esetting the point annotations")
+                    clicked_points = []
+                elif key == ord("e"):
+                    print("Entering (e)dit mode")
+                elif key == ord("t"):
+                    if len(clicked_points) == 0:
+                        print(
+                            "No points to generate the segmentation mask. Make sure to add at least one point."
+                        )
+                        continue
+                    print(
+                        "Generating the segmentation mask, check its quality. If the mask is good press 't' again to move on."
+                    )
+                    cv2.setWindowTitle(annotation_window_name, check_window_name)
+                    state = "check"
+
                     if self.segmentation_model == "sam2":
                         clicked_points_np = np.array(clicked_points)
                         input_label = clicked_points_np[:, 2]
@@ -169,46 +119,31 @@ class InteractiveSegmentation:
                             )
                             mask = mask[0]
                     state = "segmentation"
-                    clear_drawn_points()
-                elif key == "r":
-                    clear_drawn_points()
-                    clicked_points = []
-                    print("Cleared previous points")
             elif state == "segmentation":
-                renderer.fig.canvas.mpl_disconnect(cid)
-                masked_image = image.copy()
                 mask_color = np.array([30, 144, 255])
                 mask_overlay = mask.astype(float).reshape(
                     image.shape[0], image.shape[1], 1
                 ) * mask_color.reshape(1, 1, -1)
-                masked_image = mask_overlay * 0.6 + masked_image * 0.4
-                masked_image[mask == 0] = image[mask == 0]
-                renderer.ax.set_title("Check the segmentation quality")
-                renderer(masked_image.astype(np.uint8))
-                if key == "t":
+                display_img = mask_overlay * 0.6 + display_img * 0.4
+                display_img[mask == 0] = image[mask == 0]
+                display_img = display_img.astype(np.uint8)
+                if key == ord("t"):
                     masks.append(mask)
                     current_image_idx += 1
                     state = "annotation"
-                    clear_drawn_points()
                     clicked_points = []
                     if current_image_idx < len(images):
                         print_help_message()
-                elif key == "e":
+                elif key == ord("e"):
+                    print("Entering (e)dit mode")
+                    cv2.setWindowTitle(annotation_window_name, annotation_window_name)
                     state = "annotation"
-                    # redraw existing points since they got removed to show the segmentation image
-                    for x in annotation_objs:
-                        x.remove()
-                    annotation_objs = []
-                    for pos in clicked_points:
-                        annotation_objs.append(
-                            renderer.ax.plot(
-                                pos[0], pos[1], "ro" if pos[2] == 0 else "go"
-                            )[0]
-                        )
-                elif key == "r":
-                    state = "annotation"
+                elif key == ord("r"):
+                    print("(r)esetting the point annotations")
                     clicked_points = []
-                    clear_drawn_points()
-                    print("Cleared previous points")
-        renderer.close()
+                    state = "annotation"
+            cv2.imshow(
+                annotation_window_name, cv2.cvtColor(display_img, cv2.COLOR_RGB2BGR)
+            )
+        cv2.destroyWindow(annotation_window_name)
         return np.stack(masks)

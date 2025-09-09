@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="easyhec",
-    version="0.1.7",
+    version="0.1.8",
     packages=find_packages(),
     package_data={"easyhec": ["examples/real/robot_definitions/**"]},
     author="Stone Tao",
@@ -20,6 +20,7 @@ setup(
         "transforms3d",
         "matplotlib",
         "urchin",
+        "opencv-python",
         # ninja is used by nvdiffrast
         "ninja>=1.11",
     ],
