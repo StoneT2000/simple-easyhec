@@ -2,6 +2,8 @@
 Tools for interactive segmentation
 """
 
+from typing import Callable, Union
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,21 +13,27 @@ from matplotlib import pyplot as plt
 
 class InteractiveSegmentation:
     """
-    Interactive segmentation tool. Opens a window from which you can click to record pixel positions.
+    Interactive segmentation tool. Allows you to give a list of images to annotate through a CV2 window from which you can click to annotat positive/negative points.
+
+    Args:
+        segmentation_model: The segmentation model to use. Can be a string indicating a model that is already setup or a callable function to generate segmentation masks given point annotations and an image.
+
+            The callable function should be of the form def `segment(image: np.ndarray, clicked_points_np: np.ndarray) -> np.ndarray`. Image is shape (H, W, 3) and clicked_points_np is shape (N, 3) where each element is a (x, y, label) tuple. The label is 1 for positive points and -1 for negative points. The function should return a numpy array of shape (H, W) where each pixel is either 0 or 1 for the mask.
+
+        segmentation_model_cfg: The configuration for the segmentation model. Only used if the segmentation model is a string.
     """
 
     def __init__(
         self,
-        segmentation_model: str = "sam2",
+        segmentation_model: Union[
+            str, Callable[[np.ndarray, np.ndarray], np.ndarray]
+        ] = "sam2",
         segmentation_model_cfg: dict = dict(
             checkpoint="sam2/checkpoints/sam2.1_hiera_large.pt",
             model_cfg="sam2/configs/sam2.1/sam2.1_hiera_l.yaml",
         ),
     ):
-        """
-        Args:
-            segmentation_model: The segmentation model to use. Currently only "sam2" is supported.
-        """
+
         self.segmentation_model = segmentation_model
         if self.segmentation_model == "sam2":
             from sam2.build_sam import build_sam2
@@ -34,6 +42,23 @@ class InteractiveSegmentation:
             model_cfg = segmentation_model_cfg["model_cfg"]
             checkpoint = segmentation_model_cfg["checkpoint"]
             self.predictor = SAM2ImagePredictor(build_sam2(model_cfg, checkpoint))
+
+            def segment(image, clicked_points_np):
+                input_label = clicked_points_np[:, 2]
+                input_point = clicked_points_np[:, :2]
+                with torch.inference_mode(), torch.autocast(
+                    "cuda", dtype=torch.bfloat16
+                ):
+                    self.predictor.set_image(image)
+                    mask, _, _ = self.predictor.predict(
+                        input_point, input_label, multimask_output=False
+                    )
+                    mask = mask[0]
+                return mask
+
+            self._segment = segment
+        elif isinstance(self.segmentation_model, Callable):
+            self._segment = self.segmentation_model
         else:
             raise ValueError(
                 f"Segmentation model {self.segmentation_model} not supported"
@@ -49,7 +74,6 @@ class InteractiveSegmentation:
         current_image_idx = 0
         masks = []
         clicked_points = []
-
         state = "annotation"
 
         def print_help_message():
@@ -105,19 +129,8 @@ class InteractiveSegmentation:
                     )
                     cv2.setWindowTitle(annotation_window_name, check_window_name)
                     state = "check"
-
-                    if self.segmentation_model == "sam2":
-                        clicked_points_np = np.array(clicked_points)
-                        input_label = clicked_points_np[:, 2]
-                        input_point = clicked_points_np[:, :2]
-                        with torch.inference_mode(), torch.autocast(
-                            "cuda", dtype=torch.bfloat16
-                        ):
-                            self.predictor.set_image(image)
-                            mask, _, _ = self.predictor.predict(
-                                input_point, input_label, multimask_output=False
-                            )
-                            mask = mask[0]
+                    clicked_points_np = np.array(clicked_points)
+                    mask = self._segment(image, clicked_points_np)
                     state = "segmentation"
             elif state == "segmentation":
                 mask_color = np.array([30, 144, 255])

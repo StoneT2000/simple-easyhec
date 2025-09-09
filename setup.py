@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="easyhec",
-    version="0.1.8",
+    version="0.1.9",
     packages=find_packages(),
     package_data={"easyhec": ["examples/real/robot_definitions/**"]},
     author="Stone Tao",
